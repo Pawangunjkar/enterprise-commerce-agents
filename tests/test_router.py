@@ -1,4 +1,5 @@
-from ecs_agents.catalog import APPLICATIONS, unique_agents
+from ecs_agents.agents.spec import APPLICATIONS
+from ecs_agents.catalog import unique_agents
 from ecs_agents.registry import route_agent
 from ecs_agents.scenarios import resolve_value
 
@@ -46,3 +47,13 @@ def test_multi_agent_apps_have_more_than_one_specialist() -> None:
     assert counts["payment-gateway-service"] >= 2
     assert counts["customer-360-service"] >= 2
     assert counts["ondc-seller-gateway"] >= 2
+
+
+def test_agent_lives_in_its_own_module() -> None:
+    from ecs_agents.agents.oms.order_orchestrator.checkout_saga import SPEC as saga
+    from ecs_agents.agents.billing.gst_tax_engine.eway_bill import SPEC as eway
+
+    assert saga.key == "oms.order-orchestrator.checkout-saga"
+    assert eway.key == "billing.gst-tax-engine.eway-bill"
+    assert saga.module_path.endswith("checkout_saga")
+

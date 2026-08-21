@@ -92,10 +92,27 @@ ecs-agents serve --port 8099
 
 ## Layout
 
-- `src/ecs_agents/catalog.py` — domain / application / specialist catalog
+Each operator is its own module:
+
+```
+src/ecs_agents/agents/
+  spec.py                         # AgentSpec + specialist()/journey()
+  platform/pincode_master_service/serviceability.py
+  mec/product_service/catalog_browse.py
+  oms/order_orchestrator/checkout_saga.py
+  oms/order_orchestrator/merchandising.py
+  billing/gst_tax_engine/eway_bill.py
+  crm/customer_360_service/identity_otp.py
+  portal/ecommerce_storefront_portal/store_search.py
+  journey/checkout.py             # cross-app playbook
+```
+
+Open `src/ecs_agents/agents/oms/order_orchestrator/checkout_saga.py` to see one agent's tools and mission. The router loads every `SPEC` automatically.
+
+- `src/ecs_agents/catalog.py` — discovery of those modules
 - `src/ecs_agents/registry.py` — routing and tree listing
 - `src/ecs_agents/mcp_hub.py` — stdio MCP client (`python -m ecs_mcps.<server>`)
-- `src/ecs_agents/graph.py` — LangGraph router + ReAct specialists
+- `src/ecs_agents/graph.py` — LangGraph ReAct runner for the routed agent
 - `src/ecs_agents/scenarios.py` — playbook runner with `$.step.field` bindings
 - `scenarios/*.yaml` — Indian commerce jobs
 
