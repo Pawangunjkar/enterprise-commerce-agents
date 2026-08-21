@@ -1,17 +1,21 @@
+from ecs_agents.catalog import APPLICATIONS, unique_agents
 from ecs_agents.registry import route_agent
 from ecs_agents.scenarios import resolve_value
 
 
-def test_routes_gst_to_tax_desk() -> None:
-    assert route_agent("Compute IGST and e-way bill for MH") == "tax"
+def test_routes_eway_to_gst_tax_engine() -> None:
+    key = route_agent("Need e-way bill for MH shipment")
+    assert key == "billing.gst-tax-engine.eway-bill"
 
 
-def test_routes_recommendations_to_merchandising() -> None:
-    assert route_agent("Show cross-sell and upsell for this SKU") == "merchandising"
+def test_routes_recommendations_to_oms_merchandising() -> None:
+    key = route_agent("Show cross-sell and upsell for this SKU")
+    assert key == "oms.order-orchestrator.merchandising"
 
 
-def test_routes_ndr_to_fulfillment() -> None:
-    assert route_agent("Reattempt NDR for this AWB") == "fulfillment"
+def test_routes_ndr_to_ndr_service() -> None:
+    key = route_agent("Reattempt NDR for this AWB")
+    assert key == "oms.ndr-returns-rma-service.ndr-ops"
 
 
 def test_jsonpath_walks_nested_and_data_wrapper() -> None:
@@ -24,3 +28,21 @@ def test_jsonpath_in_args() -> None:
     ctx = {"order": {"data": {"orderId": "oid-9"}}}
     args = resolve_value({"orderId": "$.order.data.orderId", "amount": 10}, ctx)
     assert args == {"orderId": "oid-9", "amount": 10}
+
+
+def test_every_application_has_at_least_one_agent() -> None:
+    covered = {spec.application for spec in unique_agents() if spec.kind == "specialist"}
+    missing = [app for app in APPLICATIONS if app not in covered]
+    assert missing == []
+
+
+def test_multi_agent_apps_have_more_than_one_specialist() -> None:
+    from collections import Counter
+
+    counts = Counter(spec.application for spec in unique_agents() if spec.kind == "specialist")
+    assert counts["product-service"] >= 2
+    assert counts["gst-tax-engine"] >= 2
+    assert counts["order-orchestrator"] >= 2
+    assert counts["payment-gateway-service"] >= 2
+    assert counts["customer-360-service"] >= 2
+    assert counts["ondc-seller-gateway"] >= 2

@@ -5,13 +5,13 @@ from pydantic import BaseModel, Field
 
 from ecs_agents.graph import chat_once
 from ecs_agents.mcp_hub import McpHub
-from ecs_agents.registry import AGENTS
+from ecs_agents.registry import agents_by_domain, unique_agents
 from ecs_agents.scenarios import list_scenario_ids, run_scenario
 from ecs_agents.settings import load_settings
 
 app = FastAPI(
     title="Enterprise Commerce Agents",
-    description="LangGraph operators that call live suite data through MCP. Owner: Pawan Gunjkar.",
+    description="LangGraph operators per domain and application. Owner: Pawan Gunjkar.",
     version="1.0.0",
 )
 
@@ -20,28 +20,46 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1)
 
 
-class ScenarioRun(BaseModel):
-    scenario: str
-
-
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
 @app.get("/v1/agents")
-def agents() -> dict:
+def agents(domain: str | None = None, application: str | None = None) -> dict:
+    specs = unique_agents()
+    if domain:
+        specs = [s for s in specs if s.domain == domain]
+    if application:
+        specs = [s for s in specs if s.application == application]
     return {
+        "count": len(specs),
         "agents": [
             {
                 "key": spec.key,
+                "domain": spec.domain,
+                "application": spec.application,
+                "slug": spec.slug,
                 "title": spec.title,
                 "mission": spec.mission,
+                "kind": spec.kind,
                 "mcpServers": list(spec.servers),
-                "defaultScenario": spec.default_scenario,
+                "tools": list(spec.tools),
+                "defaultScenario": spec.default_scenario or None,
             }
-            for spec in AGENTS.values()
-        ]
+            for spec in specs
+        ],
+    }
+
+
+@app.get("/v1/domains")
+def domains() -> dict:
+    tree = agents_by_domain()
+    return {
+        "domains": {
+            domain: {app: [spec.key for spec in agents] for app, agents in apps.items()}
+            for domain, apps in tree.items()
+        }
     }
 
 

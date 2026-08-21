@@ -15,53 +15,6 @@ from ecs_agents.prompts import prompt_for
 from ecs_agents.registry import AGENTS, route_agent
 from ecs_agents.settings import Settings
 
-# Tools the ReAct agent is allowed to call, by role (server.tool).
-AGENT_TOOLS: dict[str, list[str]] = {
-    "checkout": [
-        "pincode-master-service.serviceability",
-        "pincode-master-service.get_pincode",
-        "product-service.list_products",
-        "cart-service.add_cart_item",
-        "atp-inventory-service.lock_stock",
-        "gst-tax-engine.compute_gst",
-        "order-orchestrator.place_order",
-        "payment-gateway-service.create_bharat_qr",
-        "suite.recommend_skus",
-        "suite.get_order",
-    ],
-    "tax": [
-        "gst-tax-engine.compute_gst",
-        "gst-tax-engine.eway_bill",
-        "tcs-tds-compliance-engine.compute_tcs_194o",
-    ],
-    "merchandising": [
-        "product-service.list_products",
-        "suite.recommend_skus",
-        "offer-promotion-service.create_offer",
-    ],
-    "fulfillment": [
-        "atp-inventory-service.lock_stock",
-        "wms-fulfillment-service.create_wave",
-        "ndr-returns-rma-service.ndr_action",
-    ],
-    "billing": [
-        "payment-gateway-service.create_bharat_qr",
-        "payment-gateway-service.payment_status",
-        "invoice-service.issue_invoice",
-        "dunning-service.dunning_schedule",
-        "gst-tax-engine.compute_gst",
-    ],
-    "crm": [
-        "customer-360-service.otp_start",
-        "customer-360-service.otp_verify",
-        "customer-360-service.upsert_profile",
-        "support-ticket-service.create_ticket",
-        "loyalty-rewards-service.get_loyalty",
-        "cart-abandonment-service.mark_abandoned",
-        "dpdp-compliance-service.record_consent",
-    ],
-}
-
 
 class AgentState(TypedDict):
     messages: Annotated[list, add_messages]
@@ -81,11 +34,10 @@ def load_llm(settings: Settings) -> BaseChatModel | None:
     return ChatOpenAI(**kwargs)
 
 
-def build_graph(llm: BaseChatModel, hub: McpHub):
-    specialists = {}
-    for key, names in AGENT_TOOLS.items():
-        tools = langchain_tools(hub, names)
-        specialists[key] = create_react_agent(llm, tools, prompt=prompt_for(key))
+def build_graph(llm: BaseChatModel, hub: McpHub, agent_key: str):
+    spec = AGENTS[agent_key]
+    tools = langchain_tools(hub, list(spec.tools))
+    specialist = create_react_agent(llm, tools, prompt=prompt_for(agent_key))
 
     async def route(state: AgentState) -> dict[str, str]:
         last = ""
@@ -96,8 +48,13 @@ def build_graph(llm: BaseChatModel, hub: McpHub):
         return {"agent": route_agent(last)}
 
     async def run_specialist(state: AgentState) -> dict[str, Any]:
-        key = state["agent"]
-        result = await specialists[key].ainvoke({"messages": state["messages"]})
+        key = state.get("agent") or agent_key
+        if key != spec.key and key in AGENTS:
+            other = AGENTS[key]
+            graph = create_react_agent(llm, langchain_tools(hub, list(other.tools)), prompt=prompt_for(key))
+            result = await graph.ainvoke({"messages": state["messages"]})
+            return {"messages": result["messages"]}
+        result = await specialist.ainvoke({"messages": state["messages"]})
         return {"messages": result["messages"]}
 
     graph = StateGraph(AgentState)
@@ -110,23 +67,23 @@ def build_graph(llm: BaseChatModel, hub: McpHub):
 
 
 async def chat_once(settings: Settings, hub: McpHub, text: str) -> str:
+    key = route_agent(text)
+    spec = AGENTS[key]
     llm = load_llm(settings)
     if llm is None:
-        key = route_agent(text)
-        spec = AGENTS[key]
+        hint = spec.default_scenario or spec.key
         return (
-            f"No OPENAI_API_KEY set. Heuristic route → **{spec.title}** (`{key}`).\n"
-            f"This project is not an FAQ bot. Run a live scenario:\n"
-            f"  ecs-agents run {spec.default_scenario}\n"
-            f"Or set OPENAI_API_KEY and retry chat so the LangGraph ReAct agent can call MCP tools."
+            f"No OPENAI_API_KEY set. Routed to **{spec.title}** (`{spec.key}`)\n"
+            f"domain={spec.domain} application={spec.application} kind={spec.kind}\n"
+            f"MCP: {', '.join(spec.servers) or 'suite extras'}\n"
+            f"Run a live playbook if listed: ecs-agents run {hint}"
         )
-    key = route_agent(text)
-    await hub.start(AGENTS[key].servers)
-    graph = build_graph(llm, hub)
+    await hub.start(spec.servers)
+    graph = build_graph(llm, hub, spec.key)
     result = await graph.ainvoke(
         {
-            "messages": [SystemMessage(content=prompt_for(key)), HumanMessage(content=text)],
-            "agent": key,
+            "messages": [SystemMessage(content=prompt_for(spec.key)), HumanMessage(content=text)],
+            "agent": spec.key,
         }
     )
     last = result["messages"][-1]

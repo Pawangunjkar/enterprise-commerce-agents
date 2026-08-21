@@ -4,36 +4,30 @@ Public open-source project owned by **Pawan Gunjkar** (`pawangunjkar@gmail.com` 
 
 Standalone **Python + LangGraph** project. It is **not** inside `enterprise-commerce-suite` and it is **not** a FAQ chatbot.
 
-Agents are **operators**. They call the sibling [enterprise-commerce-mcps](https://github.com/Pawangunjkar/enterprise-commerce-mcps) FastMCP servers, which in turn hit live Enterprise Commerce Suite APIs (GST, ATP, checkout saga, BharatQR, OMS recommendations, CRM, DPDP). If a service is down, the agent returns the MCP/HTTP error — it does not invent an answer.
+Agents are **operators**. They call the sibling [enterprise-commerce-mcps](https://github.com/Pawangunjkar/enterprise-commerce-mcps) FastMCP servers, which in turn hit live Enterprise Commerce Suite APIs. If a service is down, the agent returns the MCP/HTTP error — it does not invent an answer.
+
+Layout: **one domain → many applications → one or more agents per application** (matching that app's business jobs). Cross-app **journey** squads still exist for playbooks such as Delhi UPI checkout.
 
 ```mermaid
-flowchart LR
-  User["Operator / API"] --> LG["LangGraph supervisor"]
-  LG --> A1["Checkout"]
-  LG --> A2["GST / TCS"]
-  LG --> A3["Merchandising"]
-  LG --> A4["Fulfillment"]
-  LG --> A5["Billing"]
-  LG --> A6["CRM 360"]
-  A1 --> MCP["enterprise-commerce-mcps stdio"]
-  A2 --> MCP
-  A3 --> MCP
-  A4 --> MCP
-  A5 --> MCP
-  A6 --> MCP
+flowchart TB
+  User["Operator / API"] --> LG["LangGraph router"]
+  LG --> P["platform"]
+  LG --> M["mec catalog"]
+  LG --> O["oms"]
+  LG --> B["billing"]
+  LG --> C["crm"]
+  LG --> U["portals"]
+  P --> MCP["enterprise-commerce-mcps"]
+  M --> MCP
+  O --> MCP
+  B --> MCP
+  C --> MCP
+  U --> MCP
   MCP --> GW["Suite gateway :8080"]
 ```
 
-## What you get
+`ecs-agents list-agents` prints the full tree. Counts: **54 applications**, **multiple specialists per app** where the MCP exposes more than one job (for example `product-service` has browse + lifecycle; `gst-tax-engine` has compute + e-way bill; `order-orchestrator` has checkout saga + merchandising).
 
-| Agent | Business job | MCP servers |
-| --- | --- | --- |
-| `checkout` | Serviceability → GST → place order saga → BharatQR | pincode, product, cart, ATP, GST, order-orchestrator, payments |
-| `tax` | Intra vs inter GST, e-way bill, TCS 194O | gst-tax-engine, tcs-tds-compliance-engine |
-| `merchandising` | Cross-sell / up-sell from OMS affinity + catalog | product, order-orchestrator, offers |
-| `fulfillment` | ATP lock, WMS wave, NDR action | ATP, WMS, NDR |
-| `billing` | Invoice issue, QR, dunning schedule | payments, invoice, dunning, GST |
-| `crm` | OTP, DPDP consent, tickets, loyalty | customer-360, tickets, loyalty, abandonment, DPDP |
 
 Named **scenarios** run the same MCP tools in a fixed playbook (no LLM required). Chat uses LangGraph ReAct when `OPENAI_API_KEY` is set.
 
@@ -61,7 +55,10 @@ ECS_SERVICE_URL=http://localhost:8080
 
 ```bash
 ecs-agents list-agents
+ecs-agents list-agents --domain oms
+ecs-agents list-agents --application gst-tax-engine
 ecs-agents list-scenarios
+
 ecs-agents run checkout-delhi-upi
 ecs-agents run gst-interstate-eway
 ecs-agents run merchandising-upsell
@@ -87,14 +84,16 @@ Without an API key, chat only routes to an agent and tells you which scenario to
 ecs-agents serve --port 8099
 ```
 
-- `GET /v1/agents`
+- `GET /v1/agents?domain=oms&application=order-orchestrator`
+- `GET /v1/domains`
 - `GET /v1/scenarios`
 - `POST /v1/chat` `{"message":"..."}`
 - `POST /v1/scenarios/{id}/run`
 
 ## Layout
 
-- `src/ecs_agents/registry.py` — agent → MCP server map
+- `src/ecs_agents/catalog.py` — domain / application / specialist catalog
+- `src/ecs_agents/registry.py` — routing and tree listing
 - `src/ecs_agents/mcp_hub.py` — stdio MCP client (`python -m ecs_mcps.<server>`)
 - `src/ecs_agents/graph.py` — LangGraph router + ReAct specialists
 - `src/ecs_agents/scenarios.py` — playbook runner with `$.step.field` bindings

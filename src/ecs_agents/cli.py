@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import os
 from pathlib import Path
 
 from ecs_agents.graph import chat_once
 from ecs_agents.mcp_hub import McpHub
-from ecs_agents.registry import AGENTS
+from ecs_agents.registry import agents_by_domain, unique_agents
 from ecs_agents.scenarios import list_scenario_ids, load_scenario, render_report, run_scenario
 from ecs_agents.settings import load_settings
 
@@ -42,6 +41,27 @@ async def _chat(text: str) -> int:
     return 0
 
 
+def _print_agents(domain: str, application: str) -> None:
+    specs = unique_agents()
+    if domain:
+        specs = [s for s in specs if s.domain == domain]
+    if application:
+        specs = [s for s in specs if s.application == application]
+    print(f"{len(specs)} agents  (domain={domain or '*'} application={application or '*'})")
+    tree = agents_by_domain()
+    for domain_name, apps in tree.items():
+        if domain and domain_name != domain:
+            continue
+        print(f"\n## {domain_name}")
+        for app_name, agents in apps.items():
+            if application and app_name != application:
+                continue
+            print(f"  {app_name}  ({len(agents)})")
+            for spec in agents:
+                extra = f"  playbook={spec.default_scenario}" if spec.default_scenario else ""
+                print(f"    - {spec.slug:24} {spec.title}{extra}")
+
+
 def main() -> None:
     _load_dotenv()
     parser = argparse.ArgumentParser(
@@ -49,7 +69,10 @@ def main() -> None:
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    sub.add_parser("list-agents", help="Show operator agents and their MCP servers")
+    list_p = sub.add_parser("list-agents", help="Show domain / application / specialist agents")
+    list_p.add_argument("--domain", default="", help="platform|mec|oms|billing|crm|portal|journey")
+    list_p.add_argument("--application", default="", help="MCP server / Spring app name")
+
     sub.add_parser("list-scenarios", help="Show live business playbooks")
 
     run_p = sub.add_parser("run", help="Execute a named scenario against live MCP tools")
@@ -64,12 +87,7 @@ def main() -> None:
 
     args = parser.parse_args()
     if args.cmd == "list-agents":
-        for spec in AGENTS.values():
-            print(f"{spec.key:16} {spec.title}")
-            print(f"                 {spec.mission}")
-            print(f"                 MCP: {', '.join(spec.servers)}")
-            print(f"                 scenario: {spec.default_scenario}")
-            print()
+        _print_agents(args.domain, args.application)
         return
     if args.cmd == "list-scenarios":
         for scenario_id in list_scenario_ids():
