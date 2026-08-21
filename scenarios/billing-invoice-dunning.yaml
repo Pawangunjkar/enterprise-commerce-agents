@@ -1,0 +1,29 @@
+id: billing-invoice-dunning
+agent: billing
+title: GST invoice issue plus dunning schedule
+business: >
+  Finance issues a GST tax invoice for an interstate sale and reads the live dunning calendar.
+
+steps:
+  - id: gst
+    call: gst-tax-engine.compute_gst
+    args:
+      taxable: 49999
+      slab: 18
+      originState: HR
+      destState: DL
+      hsn: "8517"
+  - id: invoice
+    call: invoice-service.issue_invoice
+    args:
+      payload:
+        orderId: 11111111-1111-1111-1111-111111111111
+        orderNumber: ECS-DEMO-1
+        taxable: 49999
+        slab: 18
+        originState: HR
+        destState: DL
+        hsn: "8517"
+  - id: dunning
+    call: dunning-service.dunning_schedule
+    args: {}

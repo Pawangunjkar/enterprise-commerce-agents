@@ -1,0 +1,47 @@
+id: checkout-delhi-upi
+agent: checkout
+title: Delhi UPI checkout with GST and live order saga
+business: >
+  Shopper at pincode 110001 (Delhi) buying SKU-PHONE-8-128-BLACK shipped from Haryana.
+  The agent must check serviceability, quote IGST, place the OMS saga, then mint BharatQR
+  against the real order id — not a canned FAQ.
+
+steps:
+  - id: serviceability
+    call: pincode-master-service.serviceability
+    args:
+      pincode: "110001"
+      origin: "122001"
+  - id: catalog
+    call: product-service.list_products
+    args:
+      page: 0
+      size: 10
+  - id: gst
+    call: gst-tax-engine.compute_gst
+    args:
+      taxable: 49999
+      slab: 18
+      originState: HR
+      destState: DL
+      hsn: "8517"
+  - id: attach
+    call: suite.recommend_skus
+    args:
+      skus: ["SKU-PHONE-8-128-BLACK"]
+      limit: 5
+  - id: order
+    call: order-orchestrator.place_order
+    args:
+      cartId: CART-DEL-110001
+      pincode: "110001"
+      paymentMode: UPI
+      amount: 49999
+  - id: qr
+    call: payment-gateway-service.create_bharat_qr
+    args:
+      orderId: $.order.data.orderId
+      amount: 49999
+      vpa: ecs@upi
+      merchantName: ECS Store
+      mcc: "5732"

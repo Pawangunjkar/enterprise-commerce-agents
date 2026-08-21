@@ -1,0 +1,26 @@
+id: fulfillment-atp-wave
+agent: fulfillment
+title: Lock ATP then release a WMS pick wave
+business: >
+  Warehouse NDC-HR must lock one Nova X unit and open a pick wave. If ATP is short the
+  MCP error is the answer — do not invent stock.
+
+steps:
+  - id: lock
+    call: atp-inventory-service.lock_stock
+    args:
+      sku: SKU-PHONE-8-128-BLACK
+      qty: 1
+      warehouse: NDC-HR
+  - id: wave
+    call: wms-fulfillment-service.create_wave
+    args:
+      payload:
+        - sku: SKU-PHONE-8-128-BLACK
+          bin: A-01-01
+          qty: 1
+  - id: ndr
+    call: ndr-returns-rma-service.ndr_action
+    args:
+      awb: AWB-DEMO-1001
+      action: REATTEMPT

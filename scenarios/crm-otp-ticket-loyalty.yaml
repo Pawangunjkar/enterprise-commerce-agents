@@ -1,0 +1,31 @@
+id: crm-otp-ticket-loyalty
+agent: crm
+title: OTP identity, DPDP consent, ticket, loyalty
+business: >
+  Assisted-sales desk verifies a mobile, records DPDP consent, opens a ticket, and reads
+  festival loyalty from CRM services — operational CRM, not a help-center FAQ.
+
+steps:
+  - id: otp
+    call: customer-360-service.otp_start
+    args:
+      mobile: "9999999999"
+  - id: consent
+    call: dpdp-compliance-service.record_consent
+    args:
+      payload:
+        customerId: "9999999999"
+        purpose: ORDER_FULFILLMENT
+        granted: true
+  - id: ticket
+    call: support-ticket-service.create_ticket
+    args:
+      payload:
+        subject: Delivery slot change
+        customerId: "9999999999"
+        channel: ASSISTED
+  - id: loyalty
+    call: loyalty-rewards-service.get_loyalty
+    args:
+      customerId: "9999999999"
+      festivalMultiplier: 1.5

@@ -1,0 +1,30 @@
+id: gst-interstate-eway
+agent: tax
+title: Interstate IGST plus e-way bill and TCS 194O
+business: >
+  Haryana origin to Maharashtra destination on ₹75,000 taxable electronics (HSN 8517).
+  Must call GST compute, e-way bill API, and TCS 194O — live tax engines, not policy text.
+
+steps:
+  - id: gst
+    call: gst-tax-engine.compute_gst
+    args:
+      taxable: 75000
+      slab: 18
+      originState: HR
+      destState: MH
+      hsn: "8517"
+  - id: eway
+    call: gst-tax-engine.eway_bill
+    args:
+      taxable: 75000
+      slab: 18
+      originState: HR
+      destState: MH
+      hsn: "8517"
+  - id: tcs
+    call: tcs-tds-compliance-engine.compute_tcs_194o
+    args:
+      payload:
+        gmv: 75000
+        pan: ABCDE1234F

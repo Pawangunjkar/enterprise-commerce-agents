@@ -1,0 +1,19 @@
+id: merchandising-upsell
+agent: merchandising
+title: Cross-sell and up-sell from OMS affinity plus catalog
+business: >
+  Cart holds the 8GB/128GB Nova X. Rank complementary buds/charger (cross-sell) and the
+  12GB/256GB sibling (up-sell) from persisted affinity rules, then list live products.
+
+steps:
+  - id: recs
+    call: suite.recommend_skus
+    args:
+      skus:
+        - SKU-PHONE-8-128-BLACK
+      limit: 5
+  - id: catalog
+    call: product-service.list_products
+    args:
+      page: 0
+      size: 20

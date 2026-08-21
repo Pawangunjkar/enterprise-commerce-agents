@@ -1,0 +1,43 @@
+[project]
+name = "enterprise-commerce-agents"
+version = "1.0.0"
+description = "LangGraph business agents that call Enterprise Commerce Suite through MCP servers. Owner: Pawan Gunjkar (pawangunjkar@gmail.com)."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+  { name = "Pawan Gunjkar", email = "pawangunjkar@gmail.com" },
+]
+requires-python = ">=3.11"
+dependencies = [
+  "mcp>=1.2.0",
+  "httpx>=0.27.0",
+  "pyyaml>=6.0.1",
+  "langgraph>=0.2.45",
+  "langchain-core>=0.3.0",
+  "langchain-openai>=0.2.0",
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+ecs_agents = ["py.typed"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[project.scripts]
+ecs-agents = "ecs_agents.cli:main"
