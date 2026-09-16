@@ -1,9 +1,10 @@
-"""OMS catalog consumer.
+"""OMS catalog consumer LangGraph agent.
 
-Domain oms / application catalog-consumer-service.
+Domain `oms` / application `catalog-consumer-service`.
 OMS replica consumer health probe.
 """
 
+from ecs_agents.agents.base import CommerceAgent
 from ecs_agents.agents.spec import specialist
 
 SPEC = specialist(
@@ -15,3 +16,11 @@ SPEC = specialist(
     tools=('catalog-consumer-service.health',),
     keywords=('catalog consumer', 'oms replica'),
 )
+
+
+class OmsCatalogConsumerAgent(CommerceAgent):
+    spec = SPEC
+    instructions = 'You are the dedicated operator for application `catalog-consumer-service`. OMS replica consumer health probe. Use only your bound tools. Extract ids, amounts, pincodes, HSN, and SKUs from the user message.'
+
+
+AGENT = OmsCatalogConsumerAgent()

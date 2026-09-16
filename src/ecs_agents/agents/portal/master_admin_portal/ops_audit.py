@@ -1,9 +1,10 @@
-"""Master admin audit.
+"""Master admin audit LangGraph agent.
 
-Domain portal / application master-admin-portal.
+Domain `portal` / application `master-admin-portal`.
 Ops audit query from master admin.
 """
 
+from ecs_agents.agents.base import CommerceAgent
 from ecs_agents.agents.spec import specialist
 
 SPEC = specialist(
@@ -15,3 +16,11 @@ SPEC = specialist(
     tools=('master-admin-portal.list_audit',),
     keywords=('master admin audit',),
 )
+
+
+class OpsAuditAgent(CommerceAgent):
+    spec = SPEC
+    instructions = 'You are the dedicated operator for application `master-admin-portal`. Ops audit query from master admin. Use only your bound tools. Extract ids, amounts, pincodes, HSN, and SKUs from the user message.'
+
+
+AGENT = OpsAuditAgent()

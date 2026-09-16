@@ -1,0 +1,45 @@
+id: customer-360-view
+agent: crm.customer-360-service.customer-360
+title: Customer 360 dossier
+business: >
+  Desk operator loads a live Customer 360: persist KYC, read profile, loyalty, B2B tree,
+  DPDP consent, address autofill, and optional support ticket for the same Indian mobile.
+
+steps:
+  - id: profile
+    call: customer-360-service.upsert_profile
+    args:
+      mobile: "9999999999"
+      pan: "ABCDE1234F"
+      gstin: "27ABCDE1234F1Z5"
+      name: "Priya Sharma"
+  - id: read
+    call: customer-360-service.get_profile
+    args:
+      mobile: "9999999999"
+  - id: loyalty
+    call: loyalty-rewards-service.get_loyalty
+    args:
+      customerId: "9999999999"
+      festivalMultiplier: 1.5
+  - id: tree
+    call: account-hierarchy-service.account_tree
+    args: {}
+  - id: consent
+    call: dpdp-compliance-service.record_consent
+    args:
+      payload:
+        customerId: "9999999999"
+        purpose: MARKETING
+        granted: true
+  - id: address
+    call: contact-address-service.autofill_address
+    args:
+      pincode: "110001"
+  - id: ticket
+    call: support-ticket-service.create_ticket
+    args:
+      payload:
+        subject: Customer 360 review
+        customerId: "9999999999"
+        channel: CRM_DESK

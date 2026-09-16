@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from ecs_agents.catalog import get_agent
 from ecs_agents.graph import chat_once
 from ecs_agents.mcp_hub import McpHub
 from ecs_agents.registry import agents_by_domain, unique_agents
@@ -34,21 +35,7 @@ def agents(domain: str | None = None, application: str | None = None) -> dict:
         specs = [s for s in specs if s.application == application]
     return {
         "count": len(specs),
-        "agents": [
-            {
-                "key": spec.key,
-                "domain": spec.domain,
-                "application": spec.application,
-                "slug": spec.slug,
-                "title": spec.title,
-                "mission": spec.mission,
-                "kind": spec.kind,
-                "mcpServers": list(spec.servers),
-                "tools": list(spec.tools),
-                "defaultScenario": spec.default_scenario or None,
-            }
-            for spec in specs
-        ],
+        "agents": [get_agent(spec.key).as_dict() for spec in specs],
     }
 
 

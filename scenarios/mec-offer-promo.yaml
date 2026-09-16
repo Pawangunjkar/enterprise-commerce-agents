@@ -1,0 +1,39 @@
+id: mec-offer-promo
+agent: mec-catalog
+title: MEC offer authoring — schema validate, CPQ, create offer, time-travel preview
+business: >
+  Merchandising ops validates an offer payload schema, runs CPQ evaluation, creates a
+  festival promotion on SKU-PHONE-8-128-BLACK, then previews catalog at activation time.
+
+steps:
+  - id: schema
+    call: dynamic-schema-engine.validate_schema
+    args:
+      payload:
+        entity: offer
+        offerCode: FEST-DIWALI-2026
+        offerType: PERCENT
+        discountValue: 10
+        discountKind: PERCENT
+        sku: SKU-PHONE-8-128-BLACK
+  - id: cpq
+    call: cpq-rule-engine.evaluate_cpq
+    args:
+      payload:
+        sku: SKU-PHONE-8-128-BLACK
+        channel: B2C
+        offerCode: FEST-DIWALI-2026
+        qty: 1
+  - id: offer
+    call: offer-promotion-service.create_offer
+    args:
+      payload:
+        offerCode: FEST-DIWALI-2026
+        offerType: PERCENT
+        discountValue: 10
+        discountKind: PERCENT
+        sku: SKU-PHONE-8-128-BLACK
+  - id: preview
+    call: temporal-activation-service.time_travel
+    args:
+      asOf: "2026-10-20T00:00:00Z"

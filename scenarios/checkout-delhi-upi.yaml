@@ -1,10 +1,10 @@
 id: checkout-delhi-upi
 agent: checkout
-title: Delhi UPI checkout with GST and live order saga
+title: Delhi UPI checkout with cart, ATP, GST, saga, and payment confirm
 business: >
   Shopper at pincode 110001 (Delhi) buying SKU-PHONE-8-128-BLACK shipped from Haryana.
-  The agent must check serviceability, quote IGST, place the OMS saga, then mint BharatQR
-  against the real order id — not a canned FAQ.
+  Full OMS checkout: serviceability, cart, ATP lock, dynamic price, IGST, saga, BharatQR,
+  payment simulate, and order status — not a canned FAQ.
 
 steps:
   - id: serviceability
@@ -17,10 +17,30 @@ steps:
     args:
       page: 0
       size: 10
+  - id: cart
+    call: cart-service.add_cart_item
+    args:
+      cartId: CART-DEL-110001
+      sku: SKU-PHONE-8-128-BLACK
+      qty: 1
+      unitPrice: 49999
+  - id: lock
+    call: atp-inventory-service.lock_stock
+    args:
+      sku: SKU-PHONE-8-128-BLACK
+      qty: 1
+      warehouse: NDC-HR
+  - id: price
+    call: dynamic-price-engine.calculate_price
+    args:
+      sku: SKU-PHONE-8-128-BLACK
+      basePrice: 49999
+      offerDiscount: 0
+      loyaltyDiscount: 500
   - id: gst
     call: gst-tax-engine.compute_gst
     args:
-      taxable: 49999
+      taxable: 49499
       slab: 18
       originState: HR
       destState: DL
@@ -36,12 +56,20 @@ steps:
       cartId: CART-DEL-110001
       pincode: "110001"
       paymentMode: UPI
-      amount: 49999
+      amount: 49499
+  - id: status
+    call: suite.get_order
+    args:
+      orderId: $.order.data.orderId
   - id: qr
     call: payment-gateway-service.create_bharat_qr
     args:
       orderId: $.order.data.orderId
-      amount: 49999
+      amount: 49499
       vpa: ecs@upi
       merchantName: ECS Store
       mcc: "5732"
+  - id: pay
+    call: payment-gateway-service.simulate_success
+    args:
+      txnId: $.qr.data.qr.txnId

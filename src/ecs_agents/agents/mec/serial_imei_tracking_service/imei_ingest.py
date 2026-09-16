@@ -1,9 +1,10 @@
-"""IMEI ingest.
+"""IMEI ingest LangGraph agent.
 
-Domain mec / application serial-imei-tracking-service.
+Domain `mec` / application `serial-imei-tracking-service`.
 Ingest 15-digit IMEI with Luhn checks.
 """
 
+from ecs_agents.agents.base import CommerceAgent
 from ecs_agents.agents.spec import specialist
 
 SPEC = specialist(
@@ -15,3 +16,11 @@ SPEC = specialist(
     tools=('serial-imei-tracking-service.ingest_imei',),
     keywords=('imei', 'serial ingest', 'luhn'),
 )
+
+
+class ImeiIngestAgent(CommerceAgent):
+    spec = SPEC
+    instructions = 'You are the dedicated operator for application `serial-imei-tracking-service`. Ingest 15-digit IMEI with Luhn checks. Use only your bound tools. Extract ids, amounts, pincodes, HSN, and SKUs from the user message.'
+
+
+AGENT = ImeiIngestAgent()

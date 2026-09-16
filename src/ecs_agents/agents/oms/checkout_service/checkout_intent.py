@@ -1,9 +1,10 @@
-"""Checkout intent.
+"""Checkout intent LangGraph agent.
 
-Domain oms / application checkout-service.
+Domain `oms` / application `checkout-service`.
 Create a checkout intent (pincode, GSTIN, payment mode).
 """
 
+from ecs_agents.agents.base import CommerceAgent
 from ecs_agents.agents.spec import specialist
 
 SPEC = specialist(
@@ -15,3 +16,11 @@ SPEC = specialist(
     tools=('checkout-service.create_checkout_intent',),
     keywords=('checkout intent', 'gstin checkout'),
 )
+
+
+class CheckoutIntentAgent(CommerceAgent):
+    spec = SPEC
+    instructions = 'You are the dedicated operator for application `checkout-service`. Create a checkout intent (pincode, GSTIN, payment mode). Use only your bound tools. Extract ids, amounts, pincodes, HSN, and SKUs from the user message.'
+
+
+AGENT = CheckoutIntentAgent()

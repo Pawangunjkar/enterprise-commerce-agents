@@ -5,6 +5,7 @@ import asyncio
 import os
 from pathlib import Path
 
+from ecs_agents.catalog import get_agent
 from ecs_agents.graph import chat_once
 from ecs_agents.mcp_hub import McpHub
 from ecs_agents.registry import agents_by_domain, unique_agents
@@ -47,19 +48,22 @@ def _print_agents(domain: str, application: str) -> None:
         specs = [s for s in specs if s.domain == domain]
     if application:
         specs = [s for s in specs if s.application == application]
-    print(f"{len(specs)} agents  (domain={domain or '*'} application={application or '*'})")
+        print(f"{len(specs)} agents  (domain={domain or '*'} application={application or '*'})")
     tree = agents_by_domain()
     for domain_name, apps in tree.items():
         if domain and domain_name != domain:
             continue
-        print(f"\n## {domain_name}")
+        header = False
         for app_name, agents in apps.items():
             if application and app_name != application:
                 continue
+            if not header:
+                print(f"\n## {domain_name}")
+                header = True
             print(f"  {app_name}  ({len(agents)})")
             for spec in agents:
                 extra = f"  playbook={spec.default_scenario}" if spec.default_scenario else ""
-                print(f"    - {spec.slug:24} {spec.title}{extra}")
+                print(f"    - {spec.slug:24} {type(get_agent(spec.key)).__name__:28} {spec.title}{extra}")
 
 
 def main() -> None:
@@ -78,7 +82,7 @@ def main() -> None:
     run_p = sub.add_parser("run", help="Execute a named scenario against live MCP tools")
     run_p.add_argument("scenario")
 
-    chat_p = sub.add_parser("chat", help="LangGraph ReAct chat (needs OPENAI_API_KEY) or heuristic route")
+    chat_p = sub.add_parser("chat", help="LangGraph ReAct chat (OpenAI or Gemini key) or heuristic route")
     chat_p.add_argument("text", nargs="+")
 
     serve_p = sub.add_parser("serve", help="HTTP API for chat and scenarios")

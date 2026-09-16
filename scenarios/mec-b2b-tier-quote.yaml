@@ -1,0 +1,37 @@
+id: mec-b2b-tier-quote
+agent: mec-catalog
+title: B2B tier quote with account tree, bundle price, and CPQ
+business: >
+  Dealer desk loads B2B account hierarchy, quotes tier price for SKU-PHONE-8-128-BLACK,
+  prices a component bundle, and runs CPQ rule evaluation.
+
+steps:
+  - id: tree
+    call: account-hierarchy-service.account_tree
+    args: {}
+  - id: quote
+    call: b2b-tiered-catalog-service.b2b_quote
+    args:
+      payload:
+        accountId: ACC-DEALER-NCR-01
+        sku: SKU-PHONE-8-128-BLACK
+        qty: 10
+        tier: GOLD
+  - id: bundle
+    call: component-bundle-service.price_bundle
+    args:
+      payload:
+        bundleSku: BUNDLE-PHONE-CASE
+        components:
+          - sku: SKU-PHONE-8-128-BLACK
+            qty: 1
+          - sku: SKU-CASE-NOVA-X
+            qty: 1
+  - id: cpq
+    call: cpq-rule-engine.evaluate_cpq
+    args:
+      payload:
+        accountId: ACC-DEALER-NCR-01
+        sku: SKU-PHONE-8-128-BLACK
+        qty: 10
+        channel: B2B

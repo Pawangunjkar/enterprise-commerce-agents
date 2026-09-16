@@ -1,0 +1,32 @@
+id: crm-assisted-sales-paylink
+agent: crm
+title: Assisted sales desk — profile, loyalty, consent, pay-link
+business: >
+  Store associate loads Customer 360, checks festival loyalty discount, records DPDP consent
+  for assisted checkout, and mints a WhatsApp pay-link for the shopper.
+
+steps:
+  - id: profile
+    call: customer-360-service.get_profile
+    args:
+      mobile: "9999999999"
+  - id: loyalty
+    call: loyalty-rewards-service.get_loyalty
+    args:
+      customerId: "9999999999"
+      festivalMultiplier: 1.5
+  - id: consent
+    call: dpdp-compliance-service.record_consent
+    args:
+      payload:
+        customerId: "9999999999"
+        purpose: ASSISTED_CHECKOUT
+        granted: true
+  - id: paylink
+    call: assisted-sales-service.create_paylink
+    args:
+      payload:
+        mobile: "9999999999"
+        amount: 49499
+        sku: SKU-PHONE-8-128-BLACK
+        channel: WHATSAPP

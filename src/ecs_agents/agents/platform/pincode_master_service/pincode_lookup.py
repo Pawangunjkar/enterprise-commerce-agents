@@ -1,9 +1,10 @@
-"""Pincode master lookup.
+"""Pincode master lookup LangGraph agent.
 
-Domain platform / application pincode-master-service.
+Domain `platform` / application `pincode-master-service`.
 Load India pincode master attributes.
 """
 
+from ecs_agents.agents.base import CommerceAgent
 from ecs_agents.agents.spec import specialist
 
 SPEC = specialist(
@@ -15,3 +16,11 @@ SPEC = specialist(
     tools=('pincode-master-service.get_pincode',),
     keywords=('pincode lookup', 'pincode master'),
 )
+
+
+class PincodeLookupAgent(CommerceAgent):
+    spec = SPEC
+    instructions = 'You are the dedicated operator for application `pincode-master-service`. Load India pincode master attributes. Use only your bound tools. Extract ids, amounts, pincodes, HSN, and SKUs from the user message.'
+
+
+AGENT = PincodeLookupAgent()

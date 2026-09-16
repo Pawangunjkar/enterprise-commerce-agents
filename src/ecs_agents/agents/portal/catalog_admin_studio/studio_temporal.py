@@ -1,9 +1,10 @@
-"""Catalog studio time-travel.
+"""Catalog studio time-travel LangGraph agent.
 
-Domain portal / application catalog-admin-studio.
+Domain `portal` / application `catalog-admin-studio`.
 As-of catalog from catalog studio.
 """
 
+from ecs_agents.agents.base import CommerceAgent
 from ecs_agents.agents.spec import specialist
 
 SPEC = specialist(
@@ -15,3 +16,11 @@ SPEC = specialist(
     tools=('catalog-admin-studio.time_travel',),
     keywords=('studio time travel',),
 )
+
+
+class StudioTemporalAgent(CommerceAgent):
+    spec = SPEC
+    instructions = 'You are the dedicated operator for application `catalog-admin-studio`. As-of catalog from catalog studio. Use only your bound tools. Extract ids, amounts, pincodes, HSN, and SKUs from the user message.'
+
+
+AGENT = StudioTemporalAgent()

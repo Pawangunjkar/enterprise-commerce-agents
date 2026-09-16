@@ -1,9 +1,10 @@
-"""B2B account tree.
+"""B2B account tree LangGraph agent.
 
-Domain crm / application account-hierarchy-service.
+Domain `crm` / application `account-hierarchy-service`.
 Read dealer/distributor account hierarchy.
 """
 
+from ecs_agents.agents.base import CommerceAgent
 from ecs_agents.agents.spec import specialist
 
 SPEC = specialist(
@@ -15,3 +16,11 @@ SPEC = specialist(
     tools=('account-hierarchy-service.account_tree',),
     keywords=('account tree', 'b2b hierarchy'),
 )
+
+
+class AccountTreeAgent(CommerceAgent):
+    spec = SPEC
+    instructions = 'You are the dedicated operator for application `account-hierarchy-service`. Read dealer/distributor account hierarchy. Use only your bound tools. Extract ids, amounts, pincodes, HSN, and SKUs from the user message.'
+
+
+AGENT = AccountTreeAgent()

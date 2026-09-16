@@ -1,9 +1,10 @@
-"""Cart read.
+"""Cart read LangGraph agent.
 
-Domain oms / application cart-service.
+Domain `oms` / application `cart-service`.
 Load a cart by id from cart-service.
 """
 
+from ecs_agents.agents.base import CommerceAgent
 from ecs_agents.agents.spec import specialist
 
 SPEC = specialist(
@@ -15,3 +16,11 @@ SPEC = specialist(
     tools=('cart-service.get_cart',),
     keywords=('get cart', 'view cart'),
 )
+
+
+class CartReadAgent(CommerceAgent):
+    spec = SPEC
+    instructions = 'You are the dedicated operator for application `cart-service`. Load a cart by id from cart-service. Use only your bound tools. Extract ids, amounts, pincodes, HSN, and SKUs from the user message.'
+
+
+AGENT = CartReadAgent()

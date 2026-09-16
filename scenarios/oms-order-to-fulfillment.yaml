@@ -1,0 +1,45 @@
+id: oms-order-to-fulfillment
+agent: fulfillment
+title: Order to ATP lock, WMS wave, carrier waybill, and NDR
+business: >
+  After checkout order ORD-DEL-110001, warehouse NDC-HR locks ATP, releases a WMS pick wave,
+  books Delhivery serviceability and waybill, then handles an NDR reattempt.
+
+steps:
+  - id: order
+    call: suite.get_order
+    args:
+      orderId: ORD-DEL-110001
+  - id: lock
+    call: atp-inventory-service.lock_stock
+    args:
+      sku: SKU-PHONE-8-128-BLACK
+      qty: 1
+      warehouse: NDC-HR
+  - id: wave
+    call: wms-fulfillment-service.create_wave
+    args:
+      payload:
+        - sku: SKU-PHONE-8-128-BLACK
+          bin: A-01-01
+          qty: 1
+  - id: lane
+    call: carrier-logistics-service.check_serviceability
+    args:
+      carrier: delhivery
+      payload:
+        pincode: "110001"
+        weightKg: 0.5
+  - id: waybill
+    call: carrier-logistics-service.create_waybill
+    args:
+      carrier: delhivery
+      payload:
+        orderId: ORD-DEL-110001
+        pincode: "110001"
+        sku: SKU-PHONE-8-128-BLACK
+  - id: ndr
+    call: ndr-returns-rma-service.ndr_action
+    args:
+      awb: AWB-DEMO-1001
+      action: REATTEMPT

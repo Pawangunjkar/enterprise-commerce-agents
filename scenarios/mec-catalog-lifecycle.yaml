@@ -1,0 +1,39 @@
+id: mec-catalog-lifecycle
+agent: mec-catalog
+title: MEC catalog onboarding — create, activate, IMEI, search
+business: >
+  Merchandising ops creates a new handset SKU, activates it, ingests IMEI serial tracking,
+  verifies list_products, and confirms Solr faceted search index.
+
+steps:
+  - id: create
+    call: product-service.create_product
+    args:
+      sku: SKU-PHONE-12-256-BLUE
+      name: Nova X 12 256GB Blue
+      hsnCode: "8517"
+      brand: Nova
+      categoryPath: electronics/mobiles
+      listPriceInr: 54999
+  - id: activate
+    call: product-service.activate_product
+    args:
+      id: $.create.data.id
+  - id: imei
+    call: serial-imei-tracking-service.ingest_imei
+    args:
+      sku: SKU-PHONE-12-256-BLUE
+      imei1: "356789012345678"
+      imei2: "356789012345679"
+      serial: SN-NOVA-12-001
+  - id: list
+    call: product-service.list_products
+    args:
+      page: 0
+      size: 20
+  - id: search
+    call: search-solr-indexer.search_products
+    args:
+      q: Nova X
+      start: 0
+      rows: 10

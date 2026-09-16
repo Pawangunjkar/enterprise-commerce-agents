@@ -29,7 +29,7 @@ flowchart TB
 `ecs-agents list-agents` prints the full tree. Counts: **54 applications**, **multiple specialists per app** where the MCP exposes more than one job (for example `product-service` has browse + lifecycle; `gst-tax-engine` has compute + e-way bill; `order-orchestrator` has checkout saga + merchandising).
 
 
-Named **scenarios** run the same MCP tools in a fixed playbook (no LLM required). Chat uses LangGraph ReAct when `OPENAI_API_KEY` is set.
+Named **scenarios** run the same MCP tools in a fixed playbook (no LLM required). Chat uses LangGraph ReAct when `OPENAI_API_KEY` or `GEMINI_API_KEY` / `GOOGLE_API_KEY` is set. Set `LLM_PROVIDER=openai|gemini` (default `auto`).
 
 ## Install
 
@@ -65,6 +65,7 @@ ecs-agents run merchandising-upsell
 ecs-agents run fulfillment-atp-wave
 ecs-agents run billing-invoice-dunning
 ecs-agents run crm-otp-ticket-loyalty
+ecs-agents run customer-360-view
 ```
 
 Each step prints the JSON returned by MCP (orders, tax type, remaining stock, QR payload, etc.).
@@ -74,9 +75,13 @@ Each step prints the JSON returned by MCP (orders, tax type, remaining stock, QR
 ```bash
 set OPENAI_API_KEY=...
 ecs-agents chat "Place a UPI order to 110001 for the 8GB phone and show GST"
+
+set LLM_PROVIDER=gemini
+set GEMINI_API_KEY=...
+ecs-agents chat "Show customer 360 for 9999999999"
 ```
 
-Without an API key, chat only routes to an agent and tells you which scenario to run.
+Without an API key, chat only routes to an agent and tells you which scenario to run. Default Gemini model is `gemini-2.0-flash` (`GEMINI_MODEL`).
 
 ## HTTP API
 
@@ -92,7 +97,13 @@ ecs-agents serve --port 8099
 
 ## Layout
 
-Each operator is its own module:
+Each operator is a **LangGraph ReAct `CommerceAgent`** (class + `AGENT` singleton) with its own system prompt and MCP tools:
+
+```
+src/ecs_agents/agents/oms/order_orchestrator/checkout_saga.py
+  class CheckoutSagaAgent(CommerceAgent): ...
+  AGENT = CheckoutSagaAgent()
+```
 
 ```
 src/ecs_agents/agents/
@@ -102,12 +113,13 @@ src/ecs_agents/agents/
   oms/order_orchestrator/checkout_saga.py
   oms/order_orchestrator/merchandising.py
   billing/gst_tax_engine/eway_bill.py
+  crm/customer_360_service/customer_360.py
   crm/customer_360_service/identity_otp.py
   portal/ecommerce_storefront_portal/store_search.py
   journey/checkout.py             # cross-app playbook
 ```
 
-Open `src/ecs_agents/agents/oms/order_orchestrator/checkout_saga.py` to see one agent's tools and mission. The router loads every `SPEC` automatically.
+Open `src/ecs_agents/agents/oms/order_orchestrator/checkout_saga.py` to see `CheckoutSagaAgent`: instructions, bound MCP tools, and `compile()` / `ainvoke()` for LangGraph. Chat routes (keywords, or the LLM when an OpenAI/Gemini key is set) then runs **that class**, not a generic FAQ bot. `Customer360Agent` (`crm.customer-360-service.customer-360`) builds a live KYC + loyalty + hierarchy dossier.
 
 - `src/ecs_agents/catalog.py` — discovery of those modules
 - `src/ecs_agents/registry.py` — routing and tree listing

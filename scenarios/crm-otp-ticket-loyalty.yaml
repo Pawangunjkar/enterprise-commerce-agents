@@ -1,13 +1,29 @@
 id: crm-otp-ticket-loyalty
 agent: crm
-title: OTP identity, DPDP consent, ticket, loyalty
+title: OTP identity, KYC, DPDP consent, ticket, loyalty, abandonment
 business: >
-  Assisted-sales desk verifies a mobile, records DPDP consent, opens a ticket, and reads
-  festival loyalty from CRM services — operational CRM, not a help-center FAQ.
+  Assisted-sales desk verifies mobile OTP, persists KYC, records DPDP consent, opens a ticket,
+  reads festival loyalty, autofill address, and marks cart abandonment — operational CRM end to end.
 
 steps:
   - id: otp
     call: customer-360-service.otp_start
+    args:
+      mobile: "9999999999"
+  - id: verify
+    call: customer-360-service.otp_verify
+    args:
+      mobile: "9999999999"
+      otp: "123456"
+  - id: profile
+    call: customer-360-service.upsert_profile
+    args:
+      mobile: "9999999999"
+      pan: "ABCDE1234F"
+      gstin: "27ABCDE1234F1Z5"
+      name: "Priya Sharma"
+  - id: read
+    call: customer-360-service.get_profile
     args:
       mobile: "9999999999"
   - id: consent
@@ -29,3 +45,14 @@ steps:
     args:
       customerId: "9999999999"
       festivalMultiplier: 1.5
+  - id: address
+    call: contact-address-service.autofill_address
+    args:
+      pincode: "110001"
+  - id: abandon
+    call: cart-abandonment-service.mark_abandoned
+    args:
+      payload:
+        customerId: "9999999999"
+        cartId: CART-DEL-110001
+        reason: ASSISTED_CALLBACK

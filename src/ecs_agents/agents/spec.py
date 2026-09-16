@@ -106,6 +106,10 @@ class AgentSpec:
         return f"ecs_agents.agents.{self.domain}.{_ident(self.application)}.{_ident(self.slug)}"
 
 
+def mcp_module(server: str) -> str:
+    return "ecs_mcps." + server.replace("-", "_")
+
+
 def _ident(name: str) -> str:
     return name.replace("-", "_").replace("*", "squads")
 

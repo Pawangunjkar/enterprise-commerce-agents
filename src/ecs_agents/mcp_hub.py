@@ -12,7 +12,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.types import TextContent
 
-from ecs_agents.registry import mcp_module
+from ecs_agents.agents.spec import mcp_module
 from ecs_agents.settings import Settings
 from ecs_agents.suite_http import SuiteHttp, extra_tool_specs, invoke_extra
 

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from ecs_agents.catalog import APPLICATIONS, AgentSpec, unique_agents
-from ecs_agents.catalog import AGENTS  # noqa: F401
+from ecs_agents.agents.spec import APPLICATIONS, AgentSpec, mcp_module
+from ecs_agents.catalog import AGENTS, unique_agents
 
 __all__ = [
     "AGENTS",
@@ -16,10 +16,6 @@ __all__ = [
     "route_agent",
     "unique_agents",
 ]
-
-
-def mcp_module(server: str) -> str:
-    return "ecs_mcps." + server.replace("-", "_")
 
 
 def agents_by_domain() -> dict[str, dict[str, list[AgentSpec]]]:

@@ -19,6 +19,11 @@ def test_routes_ndr_to_ndr_service() -> None:
     assert key == "oms.ndr-returns-rma-service.ndr-ops"
 
 
+def test_routes_customer_360() -> None:
+    key = route_agent("Show customer 360 for 9999999999")
+    assert key == "crm.customer-360-service.customer-360"
+
+
 def test_jsonpath_walks_nested_and_data_wrapper() -> None:
     ctx = {"order": {"data": {"orderId": "abc-123"}, "success": True}}
     assert resolve_value("$.order.data.orderId", ctx) == "abc-123"
@@ -45,15 +50,25 @@ def test_multi_agent_apps_have_more_than_one_specialist() -> None:
     assert counts["gst-tax-engine"] >= 2
     assert counts["order-orchestrator"] >= 2
     assert counts["payment-gateway-service"] >= 2
-    assert counts["customer-360-service"] >= 2
+    assert counts["customer-360-service"] >= 3
     assert counts["ondc-seller-gateway"] >= 2
 
 
 def test_agent_lives_in_its_own_module() -> None:
-    from ecs_agents.agents.oms.order_orchestrator.checkout_saga import SPEC as saga
-    from ecs_agents.agents.billing.gst_tax_engine.eway_bill import SPEC as eway
+    from ecs_agents.agents.billing.gst_tax_engine.eway_bill import AGENT as eway
+    from ecs_agents.agents.crm.customer_360_service.customer_360 import AGENT as c360
+    from ecs_agents.agents.crm.customer_360_service.customer_360 import Customer360Agent
+    from ecs_agents.agents.oms.order_orchestrator.checkout_saga import AGENT as saga
+    from ecs_agents.agents.oms.order_orchestrator.checkout_saga import CheckoutSagaAgent
+    from ecs_agents.catalog import get_agent
 
+    assert isinstance(saga, CheckoutSagaAgent)
     assert saga.key == "oms.order-orchestrator.checkout-saga"
     assert eway.key == "billing.gst-tax-engine.eway-bill"
-    assert saga.module_path.endswith("checkout_saga")
+    assert "place_order" in saga.system_prompt
+    assert get_agent(saga.key) is saga
+    assert isinstance(c360, Customer360Agent)
+    assert "get_profile" in c360.system_prompt
+    assert callable(saga.compile)
+    assert callable(saga.ainvoke)
 

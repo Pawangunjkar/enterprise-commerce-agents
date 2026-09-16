@@ -1,27 +1,39 @@
-"""Load SPEC from every agent module under ecs_agents.agents."""
+"""Load AGENT (preferred) or SPEC from every operator module."""
 
 from __future__ import annotations
 
 import importlib
 import pkgutil
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ecs_agents.agents.spec import AgentSpec
+from ecs_agents.agents.base import CommerceAgent
+from ecs_agents.agents.spec import AgentSpec
+
+_SKIP = {"spec", "discover", "base", "tool_factory"}
 
 
-def discover_agents() -> dict[str, "AgentSpec"]:
+def discover_bundle() -> dict[str, CommerceAgent]:
     import ecs_agents.agents as package
 
-    catalog: dict[str, AgentSpec] = {}
+    bundle: dict[str, CommerceAgent] = {}
     for module_info in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
-        if module_info.name.endswith(".spec") or module_info.name.endswith(".discover"):
+        leaf = module_info.name.rsplit(".", 1)[-1]
+        if leaf in _SKIP or module_info.ispkg:
             continue
         module = importlib.import_module(module_info.name)
-        spec = getattr(module, "SPEC", None)
-        if spec is None:
+        agent = getattr(module, "AGENT", None)
+        if agent is None:
+            spec = getattr(module, "SPEC", None)
+            if spec is None:
+                continue
+            agent = CommerceAgent(spec=spec)
+        if not isinstance(agent, CommerceAgent):
             continue
-        catalog[spec.key] = spec
+        spec = agent.spec
+        bundle[spec.key] = agent
         if spec.kind == "journey":
-            catalog[spec.slug] = spec
-    return catalog
+            bundle[spec.slug] = agent
+    return bundle
+
+
+def specs_from(bundle: dict[str, CommerceAgent]) -> dict[str, AgentSpec]:
+    return {key: agent.spec for key, agent in bundle.items()}

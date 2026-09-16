@@ -1,9 +1,10 @@
-"""Bulk import ops.
+"""Bulk import ops LangGraph agent.
 
-Domain mec / application bulk-catalog-import-service.
+Domain `mec` / application `bulk-catalog-import-service`.
 Bulk catalog import worker probe.
 """
 
+from ecs_agents.agents.base import CommerceAgent
 from ecs_agents.agents.spec import specialist
 
 SPEC = specialist(
@@ -15,3 +16,11 @@ SPEC = specialist(
     tools=('bulk-catalog-import-service.health',),
     keywords=('bulk import', 'catalog import'),
 )
+
+
+class BulkImportOpsAgent(CommerceAgent):
+    spec = SPEC
+    instructions = 'You are the dedicated operator for application `bulk-catalog-import-service`. Bulk catalog import worker probe. Use only your bound tools. Extract ids, amounts, pincodes, HSN, and SKUs from the user message.'
+
+
+AGENT = BulkImportOpsAgent()
